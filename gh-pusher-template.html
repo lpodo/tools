@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNyIgZmlsbD0iIzBlMTExNyIvPgogIDxwYXRoIGQ9Ik0xNiA3IEwxNiAyMSIgc3Ryb2tlPSIjNThhNmZmIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxwYXRoIGQ9Ik05IDE0IEwxNiA3IEwyMyAxNCIgc3Ryb2tlPSIjNThhNmZmIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZmlsbD0ibm9uZSIvPgogIDxsaW5lIHgxPSI4IiB5MT0iMjUiIHgyPSIyNCIgeTI9IjI1IiBzdHJva2U9IiM1OGE2ZmYiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+Cjwvc3ZnPg==">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Push to GitHub</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0e1117; --s1: #161b27; --s2: #1e2435; --b: #2a3149;
+    --acc: #58a6ff; --grn: #3fb950; --red: #f85149; --ylw: #d29922;
+    --txt: #c9d1d9; --m: #8b949e;
+  }
+  body { background: var(--bg); color: var(--txt); font-family: 'Courier New', monospace; font-size: 13px; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .card { width: 480px; background: var(--s1); border: 1px solid var(--b); border-radius: 12px; overflow: hidden; }
+  .card-header { padding: 16px 20px; background: var(--s2); border-bottom: 1px solid var(--b); display: flex; align-items: center; gap: 10px; }
+  .card-logo { font-family: sans-serif; font-weight: 700; font-size: 14px; color: var(--acc); }
+  .card-repo { font-size: 11px; color: var(--m); margin-left: auto; }
+  .card-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .field-label { font-size: 10px; text-transform: uppercase; letter-spacing: .8px; color: var(--m); margin-bottom: 6px; display: block; }
+  .token-row { display: flex; gap: 8px; }
+  .inp { flex: 1; background: var(--bg); border: 1px solid var(--b); border-radius: 6px; padding: 8px 12px; font-family: monospace; font-size: 12px; color: var(--txt); outline: none; }
+  .inp:focus { border-color: var(--acc); }
+  .save-btn { background: var(--s2); border: 1px solid var(--b); border-radius: 6px; padding: 8px 12px; font-size: 12px; color: var(--m); cursor: pointer; white-space: nowrap; }
+  .save-btn:hover { color: var(--acc); border-color: var(--acc); }
+  .token-ok { font-size: 12px; color: var(--grn); display: flex; align-items: center; gap: 8px; }
+  .token-change { font-size: 11px; color: var(--m); cursor: pointer; text-decoration: underline; margin-left: auto; }
+  .files { display: flex; flex-direction: column; gap: 6px; }
+  .file-row { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--b); border-radius: 6px; padding: 8px 12px; font-size: 12px; }
+  .file-path { flex: 1; }
+  .file-status { font-size: 11px; flex-shrink: 0; color: var(--m); }
+  .file-status.pushing { color: var(--ylw); }
+  .file-status.done { color: var(--grn); }
+  .file-status.error { color: var(--red); }
+  .commit-inp { width: 100%; background: var(--bg); border: 1px solid var(--b); border-radius: 6px; padding: 8px 12px; font-family: monospace; font-size: 12px; color: var(--txt); outline: none; }
+  .commit-inp:focus { border-color: var(--acc); }
+  .push-btn { width: 100%; background: var(--acc); border: none; border-radius: 8px; padding: 11px; font-family: sans-serif; font-weight: 700; font-size: 14px; color: #0d1117; cursor: pointer; }
+  .push-btn:hover:not(:disabled) { opacity: .85; }
+  .push-btn:disabled { opacity: .35; cursor: not-allowed; }
+  .push-btn.done { background: var(--grn); }
+  .log { font-size: 11px; line-height: 1.8; border-top: 1px solid var(--b); padding: 12px 20px; background: var(--bg); max-height: 140px; overflow-y: auto; }
+  .ok { color: var(--grn); }
+  .err { color: var(--red); }
+  .info { color: var(--m); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-header">
+    <span class="card-logo">⬡ Push to GitHub</span>
+    <span class="card-repo" id="repoLabel"></span>
+  </div>
+  <div class="card-body">
+    <div>
+      <span class="field-label">GitHub Token</span>
+      <div id="tokenSection">
+        <div class="token-row">
+          <input class="inp" type="password" id="tokenInput" placeholder="github_pat_…" />
+          <button class="save-btn" onclick="saveToken()">Save</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <span class="field-label">Files (<span id="fileCount"></span>)</span>
+      <div class="files" id="fileList"></div>
+    </div>
+    <div>
+      <span class="field-label">Commit message</span>
+      <input class="commit-inp" id="commitMsg" />
+    </div>
+    <button class="push-btn" id="pushBtn" onclick="doPush()">↑ Push to GitHub</button>
+  </div>
+  <div class="log" id="log" style="display:none"></div>
+</div>
+
+<script>
+// ─── CONFIGURATION ─────────────────────────────────────────────────────────
+const REPO = "owner/repo";
+const BRANCH = "main";
+const COMMIT_MESSAGE = "feat: ...";
+const FILES = [
+  {
+    path: "path/to/file.js",
+    content: `...file content...`
+  },
+  // {
+  //   path: "path/to/another.css",
+  //   content: `...file content...`
+  // }
+];
+// ──────────────────────────────────────────────────────────────────────────
+
+const GH = "https://api.github.com";
+const TOKEN_KEY = "gh_pusher_token";
+
+let token = "";
+let allDone = false;
+
+// init
+document.getElementById("repoLabel").textContent = REPO + " · " + BRANCH;
+document.getElementById("fileCount").textContent = FILES.length;
+document.getElementById("commitMsg").value = COMMIT_MESSAGE;
+
+// render file list
+FILES.forEach((f, i) => {
+  const row = document.createElement("div");
+  row.className = "file-row";
+  row.innerHTML = `<span>📄</span><span class="file-path">${f.path}</span><span class="file-status" id="status-${i}">pending</span>`;
+  document.getElementById("fileList").appendChild(row);
+});
+
+// load saved token
+const saved = localStorage.getItem(TOKEN_KEY);
+if (saved) {
+  token = saved;
+  showTokenOk();
+}
+
+function cleanToken(t) {
+  return t.replace(/\s/g, "").replace(/[^\x21-\x7E]/g, "").trim();
+}
+
+function saveToken() {
+  const raw = document.getElementById("tokenInput").value;
+  const clean = cleanToken(raw);
+  if (!clean) return;
+  localStorage.setItem(TOKEN_KEY, clean);
+  token = clean;
+  showTokenOk();
+  addLog("ok", "✓ Token saved");
+}
+
+function showTokenOk() {
+  document.getElementById("tokenSection").innerHTML =
+    `<div class="token-ok">✓ Token saved <span class="token-change" onclick="resetToken()">change</span></div>`;
+}
+
+function resetToken() {
+  token = "";
+  localStorage.removeItem(TOKEN_KEY);
+  document.getElementById("tokenSection").innerHTML = `
+    <div class="token-row">
+      <input class="inp" type="password" id="tokenInput" placeholder="github_pat_…" />
+      <button class="save-btn" onclick="saveToken()">Save</button>
+    </div>`;
+}
+
+function ghHeaders() {
+  return {
+    "Authorization": "Bearer " + token,
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "Content-Type": "application/json"
+  };
+}
+
+async function getSha(path) {
+  const r = await fetch(`${GH}/repos/${REPO}/contents/${path}?ref=${BRANCH}`, { headers: ghHeaders() });
+  if (r.status === 404) return null;
+  if (!r.ok) { const e = await r.json(); throw new Error(e.message || "HTTP " + r.status); }
+  return (await r.json()).sha;
+}
+
+async function putFile(path, content, sha, msg) {
+  const b64 = btoa(unescape(encodeURIComponent(content)));
+  const body = { message: msg, content: b64, branch: BRANCH };
+  if (sha) body.sha = sha;
+  const r = await fetch(`${GH}/repos/${REPO}/contents/${path}`, {
+    method: "PUT", headers: ghHeaders(), body: JSON.stringify(body)
+  });
+  if (!r.ok) { const e = await r.json(); throw new Error(e.message || "HTTP " + r.status); }
+}
+
+function setStatus(i, cls, text) {
+  const el = document.getElementById("status-" + i);
+  el.className = "file-status " + cls;
+  el.textContent = text;
+}
+
+function addLog(cls, text) {
+  const log = document.getElementById("log");
+  log.style.display = "block";
+  const div = document.createElement("div");
+  div.className = cls;
+  div.textContent = text;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+async function doPush() {
+  if (!token) { addLog("err", "✗ Enter and save your token"); return; }
+  if (allDone) return;
+  const msg = document.getElementById("commitMsg").value.trim();
+  if (!msg) { addLog("err", "✗ Enter a commit message"); return; }
+
+  const btn = document.getElementById("pushBtn");
+  btn.disabled = true;
+  btn.textContent = "↑ Pushing…";
+  let ok = true;
+
+  for (let i = 0; i < FILES.length; i++) {
+    const f = FILES[i];
+    setStatus(i, "pushing", "↑ pushing…");
+    addLog("info", "↓ Fetching SHA for " + f.path + "…");
+    try {
+      const sha = await getSha(f.path);
+      addLog("info", "↑ Writing " + f.path + "…");
+      await putFile(f.path, f.content, sha, msg);
+      setStatus(i, "done", "✓ done");
+      addLog("ok", "✓ " + f.path + " — done");
+    } catch (e) {
+      setStatus(i, "error", "✗ " + e.message);
+      addLog("err", "✗ " + f.path + ": " + e.message);
+      ok = false;
+    }
+  }
+
+  if (ok) {
+    allDone = true;
+    btn.className = "push-btn done";
+    btn.textContent = "✓ Done";
+    addLog("ok", "🎉 All files committed to " + REPO + " (" + BRANCH + ")");
+  } else {
+    btn.disabled = false;
+    btn.textContent = "↑ Push to GitHub";
+  }
+}
+</script>
+</body>
+</html>
